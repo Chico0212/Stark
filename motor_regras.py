@@ -19,16 +19,13 @@ def encontrar_regra_correspondente(dados_entrada, df_regras):
         ncms_regra_str = str(regra.get('NCMs', ''))
         ncms_regra = [ncm.strip().lower() for ncm in ncms_regra_str.split('|') if ncm.strip()]
 
-        ncms_regra_str = str(regra.get('NCMs', ''))
         #Apenas para a regra que nos interessa, para não poluir a tela com prints
-        if '3101.00.00' in ncms_regra_str:
-           print("TA AQUI")
         if not ncms_regra or dados_entrada.get('ncm', '').lower() not in ncms_regra:
             continue  # Se o NCM é obrigatório e não bate, essa regra é inválida.
         pontos = 1
 
         # 2. Checar Origem da Mercadoria
-        if corresponde:
+        if corresponde and dados_entrada.get('origem_mercadoria'):
             origem_regra_str = str(regra.get('Origem da Mercadoria', ''))
             if origem_regra_str.strip() != '':
                 opcoes = [opt.strip().lower() for opt in origem_regra_str.split('|')]
@@ -45,8 +42,7 @@ def encontrar_regra_correspondente(dados_entrada, df_regras):
 
             if pd.notna(cst_regra) and str(cst_regra).strip() != '':
                 if str(dados_entrada.get('cst', '')) == str(int(cst_regra)):
-                    print(
-                        f"  -> [Debug CST] Valor na Regra: '{str(cst_regra)}' | Valor na Entrada: '{str(dados_entrada.get('cst', ''))}'")
+                    print(f"  -> [Debug CST] Valor na Regra: '{str(cst_regra)}' | Valor na Entrada: '{str(dados_entrada.get('cst', ''))}'")
                     pontos += 1
                 else:
                     corresponde = False
@@ -56,9 +52,8 @@ def encontrar_regra_correspondente(dados_entrada, df_regras):
             cclass_regra_str = str(regra.get('cClassTrib\n', ''))
             if cclass_regra_str.strip() != '':
                 opcoes = [opt.strip().lower() for opt in cclass_regra_str.split('|')]
+                print(f"  -> [Debug cClassTrib] Valor na Regra: '{str(cclass_regra_str)}' | Valor na Entrada: '{str(dados_entrada.get('cclass_trib', ''))}'")
                 if dados_entrada.get('cclass_trib', '').lower() in opcoes:
-                    print(
-                        f"  -> [Debug cClassTrib] Valor na Regra: '{str(cclass_regra_str)}' | Valor na Entrada: '{str(dados_entrada.get('cclass_trib', ''))}'")
                     pontos += 5
                 else:
                     corresponde = False
