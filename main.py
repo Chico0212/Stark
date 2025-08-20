@@ -1,0 +1,54 @@
+import os
+from config import PASTA_RESULTADOS
+# --- LINHA CORRIGIDA/ADICIONADA AQUI ---
+from carregador_dados import carregar_regras
+from motor_regras import encontrar_regra_correspondente
+from gerador_xml import gerar_xml_testlink
+
+
+
+def processar_operacao(dados_operacao, df_regras, test_case_id):
+    """
+    Orquestra o processo e chama o gerador de XML para o TestLink.
+    """
+    print("\n--- Analisando Dados de Entrada ---")
+    print(dados_operacao)
+
+    regra_encontrada = encontrar_regra_correspondente(dados_operacao, df_regras)
+
+    if regra_encontrada is None:
+        print("\nResultado: Os dados de entrada não se encaixam em nenhuma regra da planilha.")
+    else:
+        print("\nResultado: Regra correspondente encontrada! Gerando XML para TestLink...")
+        print(f"  -> Base Legal: {regra_encontrada.get('Índice por dispositivo legal')}")
+
+        # Chama a nova função geradora de XML
+        xml_final = gerar_xml_testlink(dados_operacao, regra_encontrada, test_case_id)
+
+        print("\n--- XML de Teste Gerado ---")
+        print(xml_final)
+
+        os.makedirs(PASTA_RESULTADOS, exist_ok=True)
+        # Cria um nome de arquivo mais descritivo
+        nome_arquivo = f"testcase_{dados_operacao.get('ncm')}_{test_case_id}.xml"
+        caminho_arquivo = os.path.join(PASTA_RESULTADOS, nome_arquivo)
+
+        with open(caminho_arquivo, "w", encoding="utf-8") as f:
+            f.write(xml_final)
+
+        print(f"Arquivo salvo em: {caminho_arquivo}")
+
+
+if __name__ == "__main__":
+    regras_df = carregar_regras()
+
+    if regras_df is not None:
+        dados_para_analisar = {
+            'ncm': '3101.00.00',
+            'cst': '200',
+            'cclass_trib': '200033.0'
+            # ... adicione outros campos conforme necessário
+        }
+
+        # Passamos um ID único para esta execução de teste específica
+        processar_operacao(dados_para_analisar, regras_df, test_case_id=25630)
