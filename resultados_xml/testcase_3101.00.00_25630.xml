@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcases>
+<testcase internalid="25630" name="CT001 - NCM - 3101.00.00 - CST 200 - cClassTrib 200033">
+    <node_order><![CDATA[1]]></node_order>
+    <externalid><![CDATA[277]]></externalid>
+    <version><![CDATA[1]]></version>
+    <summary><![CDATA[<p>Validar CBS/IBS 2026 para NCM 3101.00.00, CST 200 (CST 200) e cClassTrib 200033 (cClassTrib 200033).</p>]]></summary>
+    <preconditions><![CDATA[<p>Ano fiscal 2026. Regra aplicável: B - Lei Complementar nº 214/2025, artigo 138.</p>]]></preconditions>
+    <execution_type><![CDATA[1]]></execution_type>
+    <importance><![CDATA[2]]></importance>
+    <steps>
+        <step>
+            <step_number><![CDATA[1]]></step_number>
+            <actions><![CDATA[<p>Selecionar NCM 3101.00.00; depois CST 200 e cClassTrib 200033.</p>]]></actions>
+            <expectedresults><![CDATA[<p>Campos de tributação habilitados.</p>]]></expectedresults>
+            <execution_type><![CDATA[1]]></execution_type>
+        </step>
+        <step>
+            <step_number><![CDATA[2]]></step_number>
+            <actions><![CDATA[<p>Informar Base de Cálculo CBS/IBS: 1000.00.</p>]]></actions>
+            <expectedresults><![CDATA[<p>Base aceita.</p>]]></expectedresults>
+            <execution_type><![CDATA[1]]></execution_type>
+        </step>
+        <step>
+            <step_number><![CDATA[3]]></step_number>
+            <actions><![CDATA[<p>Com uma Base de Cálculo de R$ 1.000,00, validar a apuração da CBS.</p>]]></actions>
+            <expectedresults><![CDATA[<p>O sistema deve exibir os seguintes valores, baseados na regra de 0.6% de redução:</p>
+    <ul>
+      <li>Alíquota Padrão: <b>10.0%</b></li>
+      <li>Percentual de Redução: <b>0.6%</b></li>
+      <li>Alíquota Efetiva: <b>9.9%</b></li>
+      <li>Valor CBS: <b>R$ 99.40</b></li>
+    </ul>]]></expectedresults>
+            <execution_type><![CDATA[1]]></execution_type>
+        </step>
+    </steps>
+</testcase>
+</testcases>
