@@ -1,18 +1,18 @@
 import os
 from config import PASTA_RESULTADOS
-# --- LINHA CORRIGIDA/ADICIONADA AQUI ---
 from carregador_dados import carregar_regras
 from motor_regras import encontrar_regra_correspondente
 from gerador_xml import gerar_xml_testlink
 
+# Adicionar banco de dados, puxar o ncm do bd e consultar na tabela
 
 
 def processar_operacao(dados_operacao, df_regras, test_case_id):
     """
     Orquestra o processo e chama o gerador de XML para o TestLink.
     """
-    print("\n--- Analisando Dados de Entrada ---")
-    print(dados_operacao)
+    # print("\n--- Analisando Dados de Entrada ---")
+    # print(dados_operacao)
 
     regra_encontrada = encontrar_regra_correspondente(dados_operacao, df_regras)
 
