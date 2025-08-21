@@ -44,9 +44,9 @@ if __name__ == "__main__":
 
     if regras_df is not None:
         dados_para_analisar = {
-            'ncm': '3101.00.00',
-            'cst': '200',
-            'cclass_trib': '200033.0'
+            'ncm': '2500.00.00',
+            'cst': 200,
+            'cclass_trib': 200033.0
             # ... adicione outros campos conforme necessário
         }
 

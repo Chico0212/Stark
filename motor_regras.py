@@ -2,14 +2,22 @@
 import pandas as pd
 import re
 
-def is_nbs(valor: str):
-    if len(valor) < 2:
+def is_nbs(valor: str): # precisamos validar o nbs
+    if valor == '':
         return True
 
-    # if not re.match(r"^\d\.", valor):
-    #     valor = re.sub(r"^\d", "",valor)
+    if '.' not in valor:
+        pass
 
-    return bool(re.match(r"^\d\.", valor))
+    if valor[0] == '1' and valor[1] == '.':
+        return True
+    
+    is_alpha = r"^[A-Za-z0-9]"
+
+    if not re.match(is_alpha, valor):
+        pass
+    
+    return False
 
 def formatar_ncm(valor):
     if pd.isna(valor) or valor == '':
@@ -66,15 +74,9 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
     # PFJ -> CST, CCLASS_TRIB, NCM[] -> FILTRO TABELA
 
     df_regras = normalize_data(df_regras)
-    
-    dados_para_analisar = {
-            'ncm': '3101.00.00',
-            'cst': '200',
-            'cclass_trib': '200033.0'
-            # ... adicione outros campos conforme necessário
-        }
 
-    filtro = filtro = (df_regras['cClassTrib'] == cclass_trib_valor) & \
+
+    filtro = (df_regras['cClassTrib'] == cclass_trib_valor) & \
          (df_regras['CST'] == cst_valor) & \
          (df_regras['valores_formatados'] == ncm_valor)
 
