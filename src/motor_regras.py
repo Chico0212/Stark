@@ -2,53 +2,48 @@
 import pandas as pd
 import re
 
-def is_nbs(valor: str): # precisamos validar o nbs
-    if valor == '':
-        return True
+def is_nbm(valor: str): # precisamos validar o nbs
+    reg = r"^\d{2,4}"
+    return bool(re.match(reg, valor))
 
-    if '.' not in valor:
-        pass
+def is_nbm_valid(valor: str, ncm: str):
+    if len(ncm) == 2:
+        reg = fr"^{ncm}"
+        return bool(re.match(reg, valor))
+    
+    reg = r"(\.00|\.0000)"
+    
+    final = re.sub(reg, "", ncm)
+    
+    if len(final) == 4 and final.endswith("00"):
+        final = final[:2]
 
-    if valor[0] == '1' and valor[1] == '.':
-        return True
-    
-    is_alpha = r"^[A-Za-z0-9]"
+    reg = fr"^{final}"
+    return bool(re.match(reg, valor))
 
-    if not re.match(is_alpha, valor):
-        pass
-    
-    return False
-
-def formatar_ncm(valor):
-    if pd.isna(valor) or valor == '':
-        return valor
-    
-    # Remove pontos existentes e espaços
-    valor_limpo = str(valor).replace('.', '').replace(' ', '')
-    
-    # Preenche com zeros à direita até ter 8 dígitos
-    valor_padded = valor_limpo.ljust(8, '0')
-    
-    # Formata como XXXX.XX.XX
-    return f"{valor_padded[:4]}.{valor_padded[4:6]}.{valor_padded[6:8]}"
-
-def normalize_data(df_regras: pd.DataFrame) -> pd.DataFrame:
+def normalize_data(df_regras: pd.DataFrame, filters: dict) -> pd.DataFrame:
     """_summary_
 
     Args:
         df_regras (pd.DataFrame): _description_
     """
-    # cliente == pfj_codigo / informante_est_codigo == CNPJ
-    # dof <- idf[] == itens do dof
-    # idf <- NCM, idf_tributo
-    # idf_tributo == ibs e cbs 
+    cclass_trib_valor = filters['cclass_trib']
+    cst_valor = filters['cst']
+    ncm_valor = filters['ncm']
     
-    filtered_df = (df_regras
-                .assign(valores=df_regras['NCMs'].str.split('|'))
-                .explode('valores'))
-                # .loc[lambda x: ~x['valores'].apply(is_nbs)]) # resolver isso
+    df_exploded = (df_regras
+                .assign(NCMs=df_regras['NCMs'].str.split('|'))
+                .explode('NCMs'))
     
-    return filtered_df.assign(valores_formatados=lambda x: x['valores'].apply(formatar_ncm))
+    mask = (df_exploded['cClassTrib'] == cclass_trib_valor) & \
+         (df_exploded['CST'] == cst_valor) & \
+         (df_exploded['NCMs'].apply(is_nbm))
+
+    df_filtered = df_exploded[mask]
+    
+    mask = (df_filtered["NCMs"].apply(lambda x: is_nbm_valid(x, ncm_valor)))
+
+    return df_filtered[mask]
 
 def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame):
     """
@@ -56,41 +51,14 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
     verificando cada condição em um bloco separado para clareza.
     """
     candidatas = []
-    
-    cclass_trib_valor = dados_entrada['cclass_trib']
-    cst_valor = dados_entrada['cst']
-    ncm_valor = dados_entrada['ncm']
 
-    # BUSCA EM HIERARQUIA
-    # 1. BUSCAR DE FORMAS DIFERENTES 
-    ## 3101.00.00, 3101.00, 31.01, 3101
-    # 2. FORMATAR OS VALORES NA NORMALIZAÇÃO
-    ## 31         -> 3100.00.00
-    ## 3101       -> 3101.00.00
-    ## 31.01      -> 3101.00.00
-    ## 3101.10    -> 3100.10.00
-    ## 3101.10.10 -> 3100.10.10
-    
-    # PFJ -> CST, CCLASS_TRIB, NCM[] -> FILTRO TABELA
-
-    df_regras = normalize_data(df_regras)
-
-
-    filtro = (df_regras['cClassTrib'] == cclass_trib_valor) & \
-         (df_regras['CST'] == cst_valor) & \
-         (df_regras['valores_formatados'] == ncm_valor)
-
-
-    # df_regras['cClassTrib' == dados_entrada['cclass_trib']]['CST' == dados_entrada['cst']]['valores_formatados' == dados_entrada['ncm']]
-    df_regras = df_regras[filtro]
+    df_regras = normalize_data(df_regras, dados_entrada)
 
     for index, regra in df_regras.iterrows():
         pontos = 0
         corresponde = True
 
         # --- CONDIÇÕES DE CHECAGEM ---
-
-        # teste = normalize_data(df_regras)
         
         # 1. Checar NCMs
         ncms_regra_str = str(regra.get('NCMs', ''))
@@ -174,9 +142,10 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
         # --- FIM DAS CHECAGENS ---
         if corresponde:
             candidatas.append({'regra': regra, 'pontos': pontos})
-    print(f"  -> [Debug Candidatas] Valor na Regra: '{candidatas}')'")
-    if not candidatas:
-        return None
 
-    melhor_candidata = max(candidatas, key=lambda c: c['pontos'])
-    return melhor_candidata['regra']
+    # print(f"  -> [Debug Candidatas] Valor na Regra: '{candidatas}')'")
+    # if not candidatas:
+    #     return None
+
+    # melhor_candidata = max(candidatas, key=lambda c: c['pontos'])
+    # return melhor_candidata['regra']
