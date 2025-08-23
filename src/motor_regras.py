@@ -24,8 +24,8 @@ def normalize_data(df_regras: pd.DataFrame, filters: dict) -> pd.DataFrame:
                 .assign(ncm=df_regras['ncm'].str.split('|'))
                 .explode('ncm'))
 
-    mask = (df_exploded['cClassTrib'] == cclass_trib_valor) & \
-         (df_exploded['CST'] == cst_valor) & \
+    mask = (df_exploded['c_class_trib'] == cclass_trib_valor) & \
+         (df_exploded['cst'] == cst_valor) & \
          (df_exploded['ncm'].apply(is_nbm)) & \
          (df_exploded["ncm"].apply(lambda x: is_nbm_valid(x, ncm_valor)))
 
@@ -61,7 +61,7 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
 
         # 5. Checar Condição do Remetente
         if corresponde and dados_entrada.get('condicao_remetente'):
-            cond_rem_regra_str = str(regra.get('Condição \nPessoa Remetente/Prestador', ''))
+            cond_rem_regra_str = str(regra.get('cond_pessoa_remetente', ''))
             if cond_rem_regra_str.strip() != '':
                 opcoes = [opt.strip().lower() for opt in cond_rem_regra_str.split('|')]
                 if dados_entrada.get('condicao_remetente', '').lower() in opcoes:
