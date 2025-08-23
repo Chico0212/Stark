@@ -3,9 +3,9 @@ from config import PASTA_RESULTADOS
 from carregador_dados import carregar_regras
 from motor_regras import encontrar_regra_correspondente
 from gerador_xml import gerar_xml_testlink
+import re
 
 # Adicionar banco de dados, puxar o ncm do bd e consultar na tabela
-
 
 def processar_operacao(dados_operacao, df_regras, test_case_id):
     """
@@ -38,16 +38,24 @@ def processar_operacao(dados_operacao, df_regras, test_case_id):
 
         print(f"Arquivo salvo em: {caminho_arquivo}")
 
+def format_ncm(ncm: str):
+    reg = r"(\.00|\.0000)"
+    
+    final = re.sub(reg, "", ncm)
+    
+    if len(final) == 4 and final.endswith("00"):
+        final = final[:2]
+
+    return final
 
 if __name__ == "__main__":
     regras_df = carregar_regras()
 
     if regras_df is not None:
         dados_para_analisar = {
-            'ncm': '2500.00.00',
+            'ncm': format_ncm('2500'),
             'cst': 200,
             'cclass_trib': 200033.0
-            # ... adicione outros campos conforme necessário
         }
 
         # Passamos um ID único para esta execução de teste específica

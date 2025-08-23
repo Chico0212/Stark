@@ -7,18 +7,17 @@ def is_nbm(valor: str): # precisamos validar o nbs
     return bool(re.match(reg, valor))
 
 def is_nbm_valid(valor: str, ncm: str):
-    if len(ncm) == 2:
-        reg = fr"^{ncm}"
-        return bool(re.match(reg, valor))
+    # if len(ncm) == 2:
+    #     reg = fr"^{ncm}"
+    #     return bool(re.match(reg, valor))
     
-    reg = r"(\.00|\.0000)"
+    # reg = r"(\.00|\.0000)"
     
-    final = re.sub(reg, "", ncm)
+    # final = re.sub(reg, "", ncm)
     
-    if len(final) == 4 and final.endswith("00"):
-        final = final[:2]
-
-    reg = fr"^{final}"
+    # if len(final) == 4 and final.endswith("00"):
+    #     final = final[:2]
+    reg = fr"^{valor}"
     return bool(re.match(reg, valor))
 
 def normalize_data(df_regras: pd.DataFrame, filters: dict) -> pd.DataFrame:
@@ -34,7 +33,7 @@ def normalize_data(df_regras: pd.DataFrame, filters: dict) -> pd.DataFrame:
     df_exploded = (df_regras
                 .assign(NCMs=df_regras['NCMs'].str.split('|'))
                 .explode('NCMs'))
-    
+
     mask = (df_exploded['cClassTrib'] == cclass_trib_valor) & \
          (df_exploded['CST'] == cst_valor) & \
          (df_exploded['NCMs'].apply(is_nbm))
@@ -56,10 +55,10 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
 
     for index, regra in df_regras.iterrows():
         pontos = 0
-        corresponde = True
+        corresponde = True       
 
         # --- CONDIÇÕES DE CHECAGEM ---
-        
+         
         # 1. Checar NCMs
         ncms_regra_str = str(regra.get('NCMs', ''))
         ncms_regra = [ncm.strip().lower() for ncm in ncms_regra_str.split('|') if ncm.strip()]
@@ -143,9 +142,9 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
         if corresponde:
             candidatas.append({'regra': regra, 'pontos': pontos})
 
-    # print(f"  -> [Debug Candidatas] Valor na Regra: '{candidatas}')'")
-    # if not candidatas:
-    #     return None
+    print(f"  -> [Debug Candidatas] Valor na Regra: '{candidatas}')'")
+    if not candidatas:
+        return None
 
-    # melhor_candidata = max(candidatas, key=lambda c: c['pontos'])
-    # return melhor_candidata['regra']
+    melhor_candidata = max(candidatas, key=lambda c: c['pontos'])
+    return melhor_candidata['regra']
