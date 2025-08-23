@@ -1,0 +1,15 @@
+# .streamlit/config.toml
+
+[theme]
+# O azul mais escuro como cor principal para botões, seletores, etc.
+primaryColor="#094f80"
+
+# Fundo principal branco para manter a clareza e legibilidade.
+backgroundColor="#FFFFFF"
+
+secondaryBackgroundColor="#F0F2F6"
+# Cor do texto escura para garantir o contraste.
+textColor="#31333F"
+
+# Fonte padrão.
+font="sans serif"
