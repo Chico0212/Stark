@@ -45,73 +45,63 @@ def get_session() -> Session:
     
     return SessionLocal()
 
-def buscar_dados_operacao(session: Session, operacao_id: int = 1):
+def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "90050238000629"):
     """
     Busca os dados de uma operação específica no banco de dados usando uma sessão SQLAlchemy.
     Retorna os dados como um dicionário.
     """
-    try:
-        print(f"Buscando dados para a operação com ID: {operacao_id}")
-        
-        sql_query = text("""
-            select 
-                d.numero, 
-                d.EMITENTE_PFJ_CODIGO, 
-                d.DESTINATARIO_PFJ_CODIGO, 
-                d.ind_entrada_saida, 
-                l.Ind_orgao_governamental 
-                emit_publico, 
-                b.Ind_orgao_governamental 
-                dest_publico,
-                i.nbm_codigo,
-                i.nbs_codigo,
-                i.vl_contabil,
-                t.cst_codigo_ibs_cbs,
-                t.clas_trib_ibs_cbs,
-                t.vl_base_ibs_cbs,
-                PERC_RED_ALIQ_CBS,
-                PERC_RED_ALIQ_IBS_UF,
-                VL_CBS,
-                VL_IBS_MUN,
-                VL_IBS_UF,
-                PERC_RED_ALIQ_IBS_MUN
-            from
-                cor_idf i,
-                cor_idf_tributo t,
-                cor_dof d,
-                cor_pessoa l,
-                cor_pessoa b
-            where
-                i.codigo_do_site = t.codigo_do_site
-                and d.codigo_do_site = i.codigo_do_site
-                and i.dof_sequence = t.dof_sequence
-                and d.dof_sequence = i.dof_sequence
-                and d.EMITENTE_PFJ_CODIGO = l.pfj_codigo
-                and d.DESTINATARIO_PFJ_CODIGO=b.pfj_codigo
-        """) 
-        
-        result = session.execute(sql_query, {"id": operacao_id}).mappings().first()
-        
-        if result:
-            dados_operacao = dict(result)
-            print("Dados encontrados:", dados_operacao)
-            return dados_operacao
-        else:
-            print(f"Nenhum dado encontrado para a operação com ID: {operacao_id}")
-            return None
+    with get_session() as session:
+        try:
+            print(f"Buscando dados para a operação com ID: {operacao_id}")
             
-    except SQLAlchemyError as e:
-        print(f"Erro ao buscar dados com SQLAlchemy: {e}")
-        return None
+            sql_query = text(f"""
+                                SELECT
+                                    dof.EMITENTE_PFJ_CODIGO,
+                                    dof.DESTINATARIO_PFJ_CODIGO,
+                                    dof.ind_entrada_saida,
+                                    pessoa_a.Ind_orgao_governamental AS emit_publico,
+                                    pessoa_b.Ind_orgao_governamental AS dest_publico,
+                                    idf.nbm_codigo,
+                                    tributo.cst_codigo_ibs_cbs,
+                                    tributo.clas_trib_ibs_cbs
+                                FROM
+                                    CSES3_DEV.cor_idf idf,
+                                    CSES3_DEV.cor_idf_tributo tributo,
+                                    CSES3_DEV.cor_dof dof,
+                                    CSES3_DEV.cor_pessoa pessoa_a,
+                                    CSES3_DEV.cor_pessoa pessoa_b
+                                WHERE
+                                    idf.codigo_do_site = tributo.codigo_do_site
+                                    AND dof.codigo_do_site = idf.codigo_do_site
+                                    AND idf.dof_sequence = tributo.dof_sequence
+                                    AND dof.dof_sequence = idf.dof_sequence
+                                    AND dof.EMITENTE_PFJ_CODIGO = pessoa_a.pfj_codigo
+                                    AND dof.DESTINATARIO_PFJ_CODIGO = pessoa_b.pfj_codigo
+                                    AND idf.nbm_codigo IS NOT NULL
+                                    AND tributo.cst_codigo_ibs_cbs IS NOT NULL
+                                    AND tributo.clas_trib_ibs_cbs IS NOT NULL
+                                    AND dof.EMITENTE_PFJ_CODIGO = '{pfj_codigo}'
+                                        """) 
+
+            result = session.execute(sql_query, {"id": operacao_id}).mappings().all()
+            
+            if result:
+                dados_operacao = dict(result)
+                print("Dados encontrados:", dados_operacao)
+                return dados_operacao
+            else:
+                print(f"Nenhum dado encontrado para a operação com ID: {operacao_id}")
+                return None
+
+        except SQLAlchemyError as e:
+            print(f"Erro ao buscar dados com SQLAlchemy: {e}")
+            return None
 
 if __name__ == '__main__':
-    
     session = None
-    try:
-        session = get_session()
-        
+    try:        
         if session:
-            dados = buscar_dados_operacao(session, operacao_id=1)
+            dados = buscar_dados_operacao(operacao_id=1)
             if dados:
                 print("Dados retornados:", dados)
     except Exception as e:
