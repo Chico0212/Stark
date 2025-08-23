@@ -53,9 +53,9 @@ if __name__ == "__main__":
 
     if regras_df is not None:
         dados_para_analisar = {
-            'ncm': format_ncm('2500.00.00'),
+            'ncm': format_ncm('7615.10.00'),
             'cst': 200,
-            'cclass_trib': 200033.0
+            'cclass_trib': 200016
         }
 
         # Passamos um ID único para esta execução de teste específica

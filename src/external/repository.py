@@ -54,8 +54,41 @@ def buscar_dados_operacao(session: Session, operacao_id: int = 1):
         print(f"Buscando dados para a operação com ID: {operacao_id}")
         
         sql_query = text("""
-            SELECT 1 FROM DUAL
-        """)
+            select 
+                d.numero, 
+                d.EMITENTE_PFJ_CODIGO, 
+                d.DESTINATARIO_PFJ_CODIGO, 
+                d.ind_entrada_saida, 
+                l.Ind_orgao_governamental 
+                emit_publico, 
+                b.Ind_orgao_governamental 
+                dest_publico,
+                i.nbm_codigo,
+                i.nbs_codigo,
+                i.vl_contabil,
+                t.cst_codigo_ibs_cbs,
+                t.clas_trib_ibs_cbs,
+                t.vl_base_ibs_cbs,
+                PERC_RED_ALIQ_CBS,
+                PERC_RED_ALIQ_IBS_UF,
+                VL_CBS,
+                VL_IBS_MUN,
+                VL_IBS_UF,
+                PERC_RED_ALIQ_IBS_MUN
+            from
+                cor_idf i,
+                cor_idf_tributo t,
+                cor_dof d,
+                cor_pessoa l,
+                cor_pessoa b
+            where
+                i.codigo_do_site = t.codigo_do_site
+                and d.codigo_do_site = i.codigo_do_site
+                and i.dof_sequence = t.dof_sequence
+                and d.dof_sequence = i.dof_sequence
+                and d.EMITENTE_PFJ_CODIGO = l.pfj_codigo
+                and d.DESTINATARIO_PFJ_CODIGO=b.pfj_codigo
+        """) 
         
         result = session.execute(sql_query, {"id": operacao_id}).mappings().first()
         
