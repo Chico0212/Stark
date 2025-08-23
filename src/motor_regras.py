@@ -71,7 +71,7 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
 
         # 6. Checar Classe do Remetente
         if corresponde and dados_entrada.get('classe_remetente'):
-            classe_rem_regra_str = str(regra.get('Classe \nPessoa Remetente/Prestador', ''))
+            classe_rem_regra_str = str(regra.get('classe_pessoa_remetente', ''))
             if classe_rem_regra_str.strip() != '':
                 opcoes = [opt.strip().lower() for opt in classe_rem_regra_str.split('|')]
                 if dados_entrada.get('classe_remetente', '').lower() in opcoes:
@@ -83,7 +83,7 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
 
         # 7. Checar Classe do Destinatário
         if corresponde and dados_entrada.get('classe_destinatario'):
-            classe_dest_regra_str = str(regra.get('Classe\n Pessoa Destinatário', ''))
+            classe_dest_regra_str = str(regra.get('classe_pessoa_destinatario', ''))
             if classe_dest_regra_str.strip() != '':
                 opcoes = [opt.strip().lower() for opt in classe_dest_regra_str.split('|')]
                 if dados_entrada.get('classe_destinatario', '').lower() in opcoes:

@@ -8,10 +8,10 @@ def carregar_regras():
     Trata erros de arquivo não encontrado.
     """
     try:
-        regras_df = pd.read_excel(ARQUIVO_EXCEL, sheet_name=NOME_DA_ABA, usecols=["CST", "cClassTrib\n", "NCMs", "Condição \nPessoa Remetente/Prestador", "Condição\n Pessoa Destinatário", "", ""])
+        regras_df = pd.read_excel(ARQUIVO_EXCEL, sheet_name=NOME_DA_ABA, usecols=["CST", "cClassTrib\n", "NCMs", "Condição \nPessoa Remetente/Prestador", "Condição\n Pessoa Destinatário", "Classe \nPessoa Remetente/Prestador", "Classe\n Pessoa Destinatário"])
         print(f"Planilha '{NOME_DA_ABA}' carregada com sucesso.")
         
-        regras_df.columns = ["cst", "c_class_trib", "ncm", "cond_pessoa_remetente", "cond_pessoa_destinatario"]
+        regras_df.columns = ["cst", "c_class_trib", "ncm", "cond_pessoa_remetente", "cond_pessoa_destinatario", "classe_pessoa_remetente", "classe_pessoa_destinatario"]
 
         return regras_df
     except FileNotFoundError:

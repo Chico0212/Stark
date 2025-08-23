@@ -55,18 +55,18 @@ if __name__ == "__main__":
     regras_df = carregar_regras()
 
     if regras_df is not None:
-        dados_para_analisar = buscar_dados_operacao()
-        print(len(dados_para_analisar), f"\n\n{dados_para_analisar}\n\n")
+        # dados_para_analisar = buscar_dados_operacao()
+        # print(len(dados_para_analisar), f"\n\n{dados_para_analisar}\n\n")
         # nbm_codigo
         # cst_codigo_ibs_cbs
         # clas_trib_ibs_cbs
         
         # exit()
-        # {
-        #     'ncm': format_ncm('7615.10.00'),
-        #     'cst': 200,
-        #     'cclass_trib': 200016
-        # }
+        dados_para_analisar = {
+            'ncm': format_ncm('7615.10.00'),
+            'cst': 200,
+            'cclass_trib': 200016
+        }
 
         # Passamos um ID único para esta execução de teste específica
         processar_operacao(dados_para_analisar, regras_df, test_case_id=25630)
