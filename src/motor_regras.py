@@ -7,17 +7,7 @@ def is_nbm(valor: str): # precisamos validar o nbs
     return bool(re.match(reg, valor))
 
 def is_nbm_valid(valor: str, ncm: str):
-    # if len(ncm) == 2:
-    #     reg = fr"^{ncm}"
-    #     return bool(re.match(reg, valor))
-    
-    # reg = r"(\.00|\.0000)"
-    
-    # final = re.sub(reg, "", ncm)
-    
-    # if len(final) == 4 and final.endswith("00"):
-    #     final = final[:2]
-    reg = fr"^{valor}"
+    reg = fr"^{ncm}"
     return bool(re.match(reg, valor))
 
 def normalize_data(df_regras: pd.DataFrame, filters: dict) -> pd.DataFrame:
@@ -31,16 +21,15 @@ def normalize_data(df_regras: pd.DataFrame, filters: dict) -> pd.DataFrame:
     ncm_valor = filters['ncm']
     
     df_exploded = (df_regras
-                .assign(NCMs=df_regras['NCMs'].str.split('|'))
-                .explode('NCMs'))
+                .assign(ncm=df_regras['ncm'].str.split('|'))
+                .explode('ncm'))
 
     mask = (df_exploded['cClassTrib'] == cclass_trib_valor) & \
          (df_exploded['CST'] == cst_valor) & \
-         (df_exploded['NCMs'].apply(is_nbm))
+         (df_exploded['ncm'].apply(is_nbm)) & \
+         (df_exploded["ncm"].apply(lambda x: is_nbm_valid(x, ncm_valor)))
 
     df_filtered = df_exploded[mask]
-    
-    mask = (df_filtered["NCMs"].apply(lambda x: is_nbm_valid(x, ncm_valor)))
 
     return df_filtered[mask]
 
@@ -59,15 +48,6 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
 
         # --- CONDIÇÕES DE CHECAGEM ---
          
-        # 1. Checar NCMs
-        ncms_regra_str = str(regra.get('NCMs', ''))
-        ncms_regra = [ncm.strip().lower() for ncm in ncms_regra_str.split('|') if ncm.strip()]
-
-        #Apenas para a regra que nos interessa, para não poluir a tela com prints
-        if not ncms_regra or dados_entrada.get('ncm', '').lower() not in ncms_regra:
-            continue  # Se o NCM é obrigatório e não bate, essa regra é inválida.
-        pontos = 1
-
         # 2. Checar Origem da Mercadoria
         if corresponde and dados_entrada.get('origem_mercadoria'):
             origem_regra_str = str(regra.get('Origem da Mercadoria', ''))
@@ -77,31 +57,6 @@ def encontrar_regra_correspondente(dados_entrada: dict, df_regras: pd.DataFrame)
                     pontos += 2
                 else:
                     corresponde = False
-
-        # 3. Checar CST
-        if corresponde and dados_entrada.get('cst'):
-            cst_regra = regra.get('CST')
-            # --- DEBUG SIMPLES ---
-            # Imprime os valores EXATOS que serão comparados, antes de convertê-los.
-
-            if pd.notna(cst_regra) and str(cst_regra).strip() != '':
-                if str(dados_entrada.get('cst', '')) == str(int(cst_regra)):
-                    print(f"  -> [Debug CST] Valor na Regra: '{str(cst_regra)}' | Valor na Entrada: '{str(dados_entrada.get('cst', ''))}'")
-                    pontos += 1
-                else:
-                    corresponde = False
-
-        # 4. Checar cClassTrib (vamos assumir que a coluna se chama 'cClassTrib\n' como no seu exemplo)
-        if corresponde and dados_entrada.get('cclass_trib'):
-            cclass_regra_str = str(regra.get('cClassTrib\n', ''))
-            if cclass_regra_str.strip() != '':
-                opcoes = [opt.strip().lower() for opt in cclass_regra_str.split('|')]
-                print(f"  -> [Debug cClassTrib] Valor na Regra: '{str(cclass_regra_str)}' | Valor na Entrada: '{str(dados_entrada.get('cclass_trib', ''))}'")
-                if dados_entrada.get('cclass_trib', '').lower() in opcoes:
-                    pontos += 5
-                else:
-                    corresponde = False
-
         # --- Checagens do Remetente ---
 
         # 5. Checar Condição do Remetente
