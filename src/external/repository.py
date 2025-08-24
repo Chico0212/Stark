@@ -18,17 +18,20 @@ def _build_database_url() -> str:
     service = os.getenv("DB_SERVICE")
 
     if not all([user, password, host, port, service]):
-        raise ValueError("Uma ou mais variáveis de ambiente do banco de dados não foram definidas.")
+        raise ValueError(
+            "Uma ou mais variáveis de ambiente do banco de dados não foram definidas."
+        )
 
     return f"oracle+oracledb://{user}:{password}@{host}:{port}/?service_name={service}"
 
+
 try:
     DATABASE_URL = _build_database_url()
-    
+
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    
+
     print("Engine do SQLAlchemy criado com sucesso.")
 
 except Exception as e:
@@ -36,14 +39,18 @@ except Exception as e:
     engine = None
     SessionLocal = None
 
+
 def get_session() -> Session:
     """
     Cria e retorna uma nova sessão com o banco de dados.
     """
     if not SessionLocal:
-        raise RuntimeError("A configuração da sessão falhou. Não é possível criar uma sessão.")
-    
+        raise RuntimeError(
+            "A configuração da sessão falhou. Não é possível criar uma sessão."
+        )
+
     return SessionLocal()
+
 
 def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "90050238000629"):
     """
@@ -53,7 +60,7 @@ def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "9005023800062
     with get_session() as session:
         try:
             print(f"Buscando dados para a operação com ID: {operacao_id}")
-            
+
             sql_query = text(f"""
                                 SELECT
                                     dof.EMITENTE_PFJ_CODIGO,
@@ -81,10 +88,10 @@ def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "9005023800062
                                     AND tributo.cst_codigo_ibs_cbs IS NOT NULL
                                     AND tributo.clas_trib_ibs_cbs IS NOT NULL
                                     AND dof.EMITENTE_PFJ_CODIGO = '{pfj_codigo}'
-                                        """) 
+                                        """)
 
             result = session.execute(sql_query, {"id": operacao_id}).mappings().all()
-            
+
             if result:
                 dados_operacao = dict(result)
                 print("Dados encontrados:", dados_operacao)
@@ -97,9 +104,10 @@ def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "9005023800062
             print(f"Erro ao buscar dados com SQLAlchemy: {e}")
             return None
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     session = None
-    try:        
+    try:
         if session:
             dados = buscar_dados_operacao(operacao_id=1)
             if dados:

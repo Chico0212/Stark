@@ -8,12 +8,12 @@ def gerar_xml_testlink(dados_entrada, regra_aplicada, internal_id):
     com formatação manual para garantir a saída exata.
     """
     # --- 1. Extrair e Preparar os Dados ---
-    ncm = dados_entrada.get('ncm', 'N/A')
-    cst = dados_entrada.get('cst', 'N/A')
-    cclass_trib = str(dados_entrada.get('cclass_trib', 'N/A')).split('.')[0]
+    ncm = dados_entrada.get("ncm", "N/A")
+    cst = dados_entrada.get("cst", "N/A")
+    cclass_trib = str(dados_entrada.get("cclass_trib", "N/A")).split(".")[0]
 
-    percentual_reducao = regra_aplicada.get('Percentual de redução \n%')
-    base_legal = html.escape(str(regra_aplicada.get('Índice por dispositivo legal')))
+    percentual_reducao = regra_aplicada.get("Percentual de redução \n%")
+    base_legal = html.escape(str(regra_aplicada.get("Índice por dispositivo legal")))
 
     cst_desc = f"CST {cst}"
     cclass_trib_desc = f"cClassTrib {cclass_trib}"
@@ -25,7 +25,9 @@ def gerar_xml_testlink(dados_entrada, regra_aplicada, internal_id):
     preconditions_html = f"<p>Ano fiscal 2026. Regra aplicável: {base_legal}.</p>"
 
     # Actions e Expected Results dos Passos
-    actions1_html = f"<p>Selecionar NCM {ncm}; depois CST {cst} e cClassTrib {cclass_trib}.</p>"
+    actions1_html = (
+        f"<p>Selecionar NCM {ncm}; depois CST {cst} e cClassTrib {cclass_trib}.</p>"
+    )
     expected1_html = "<p>Campos de tributação habilitados.</p>"
 
     actions2_html = "<p>Informar Base de Cálculo CBS/IBS: 1000.00.</p>"
@@ -37,7 +39,9 @@ def gerar_xml_testlink(dados_entrada, regra_aplicada, internal_id):
     aliquota_efetiva = aliquota_padrao * (1 - (float(percentual_reducao) / 100.0))
     valor_cbs = base_calculo * (aliquota_efetiva / 100.0)
 
-    actions3_html = "<p>Com uma Base de Cálculo de R$ 1.000,00, validar a apuração da CBS.</p>"
+    actions3_html = (
+        "<p>Com uma Base de Cálculo de R$ 1.000,00, validar a apuração da CBS.</p>"
+    )
     expected3_html = f"""<p>O sistema deve exibir os seguintes valores, baseados na regra de {percentual_reducao}% de redução:</p>
     <ul>
       <li>Alíquota Padrão: <b>{aliquota_padrao:.1f}%</b></li>
