@@ -1,2 +1,48 @@
+# ---- Python ----
 __pycache__/
-.env/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# uv
+.uv/
+
+# ---- Build / Packaging ----
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---- Logs / Debug ----
+*.log
+*.out
+*.err
+
+# ---- OS / IDE ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ---- Streamlit ----
+.streamlit/
+
+# ---- Tests / Coverage ----
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+.mypy_cache/
+.dmypy.json
+.pyre/
+
+# ---- Misc ----
+*.bak
+*.tmp
