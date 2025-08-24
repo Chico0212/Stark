@@ -9,6 +9,7 @@ from src.services.langflow import generate_test_case
 
 
 def generate_md(rules: pd.DataFrame) -> str:
+    """função pra transformar rules em markdown"""
     return "Olá"
 
 
