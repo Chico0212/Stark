@@ -62,39 +62,38 @@ def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "9005023800062
             print(f"Buscando dados para a operação com ID: {operacao_id}")
 
             sql_query = text(f"""
-                                SELECT
-                                    dof.EMITENTE_PFJ_CODIGO,
-                                    dof.DESTINATARIO_PFJ_CODIGO,
-                                    dof.ind_entrada_saida,
-                                    pessoa_a.Ind_orgao_governamental AS emit_publico,
-                                    pessoa_b.Ind_orgao_governamental AS dest_publico,
-                                    idf.nbm_codigo,
-                                    tributo.cst_codigo_ibs_cbs,
-                                    tributo.clas_trib_ibs_cbs
+                                SELECT 
+                                    idf.nbm_codigo, tributo.clas_trib_ibs_cbs, tributo.cst_codigo_ibs_cbs,
+                                    COUNT(*) AS total_ocorrencias
                                 FROM
-                                    CSES3_DEV.cor_idf idf,
-                                    CSES3_DEV.cor_idf_tributo tributo,
-                                    CSES3_DEV.cor_dof dof,
-                                    CSES3_DEV.cor_pessoa pessoa_a,
-                                    CSES3_DEV.cor_pessoa pessoa_b
+                                    CSES3_DEV.cor_idf idf
+                                JOIN CSES3_DEV.cor_idf_tributo tributo
+                                    ON idf.codigo_do_site = tributo.codigo_do_site
+                                   AND idf.dof_sequence = tributo.dof_sequence
+                                JOIN CSES3_DEV.cor_dof dof
+                                    ON dof.codigo_do_site = idf.codigo_do_site
+                                   AND dof.dof_sequence = idf.dof_sequence
+                                JOIN CSES3_DEV.cor_pessoa pessoa_a
+                                    ON dof.EMITENTE_PFJ_CODIGO = pessoa_a.pfj_codigo
+                                JOIN CSES3_DEV.cor_pessoa pessoa_b
+                                    ON dof.DESTINATARIO_PFJ_CODIGO = pessoa_b.pfj_codigo
                                 WHERE
-                                    idf.codigo_do_site = tributo.codigo_do_site
-                                    AND dof.codigo_do_site = idf.codigo_do_site
-                                    AND idf.dof_sequence = tributo.dof_sequence
-                                    AND dof.dof_sequence = idf.dof_sequence
-                                    AND dof.EMITENTE_PFJ_CODIGO = pessoa_a.pfj_codigo
-                                    AND dof.DESTINATARIO_PFJ_CODIGO = pessoa_b.pfj_codigo
-                                    AND idf.nbm_codigo IS NOT NULL
+                                    idf.nbm_codigo IS NOT NULL
                                     AND tributo.cst_codigo_ibs_cbs IS NOT NULL
                                     AND tributo.clas_trib_ibs_cbs IS NOT NULL
                                     AND dof.EMITENTE_PFJ_CODIGO = '{pfj_codigo}'
-                                        """)
+                                GROUP BY 
+                                    idf.nbm_codigo, tributo.clas_trib_ibs_cbs, tributo.cst_codigo_ibs_cbs
+                                ORDER BY 
+                                    total_ocorrencias DESC
+                                  """)
 
             result = session.execute(sql_query, {"id": operacao_id}).mappings().all()
 
             if result:
-                dados_operacao = dict(result)
-                print("Dados encontrados:", dados_operacao)
+                # dados_operacao = dict(result)
+                dados_operacao = [dict(row) for row in result]
+                # print("Dados encontrados:", dados_operacao)
                 return dados_operacao
             else:
                 print(f"Nenhum dado encontrado para a operação com ID: {operacao_id}")
@@ -106,7 +105,8 @@ def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "9005023800062
 
 
 if __name__ == "__main__":
-    session = None
+    # session = None
+    session = get_session()
     try:
         if session:
             dados = buscar_dados_operacao(operacao_id=1)

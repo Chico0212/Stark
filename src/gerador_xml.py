@@ -8,9 +8,9 @@ def gerar_xml_testlink(dados_entrada, regra_aplicada, internal_id):
     com formatação manual para garantir a saída exata.
     """
     # --- 1. Extrair e Preparar os Dados ---
-    ncm = dados_entrada.get("ncm", "N/A")
-    cst = dados_entrada.get("cst", "N/A")
-    cclass_trib = str(dados_entrada.get("cclass_trib", "N/A")).split(".")[0]
+    ncm = dados_entrada.get("nbm_codigo", "N/A")
+    cst = dados_entrada.get("cst_codigo_ibs_cbs", "N/A")
+    cclass_trib = str(dados_entrada.get("clas_trib_ibs_cbs", "N/A")).split(".")[0]
 
     percentual_reducao = regra_aplicada.get("Percentual de redução \n%")
     base_legal = html.escape(str(regra_aplicada.get("Índice por dispositivo legal")))
