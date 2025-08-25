@@ -1,6 +1,6 @@
 # carregador_dados.py
 import pandas as pd
-from config import ARQUIVO_EXCEL, NOME_DA_ABA
+from .config import ARQUIVO_EXCEL, NOME_DA_ABA
 
 
 def explode_items(df: pd.DataFrame, col: str):

@@ -1,7 +1,7 @@
 # motor_regras.py (versão explícita e completa)
 import pandas as pd
 import re
-from src.utils.nbm_utils import format_ncm
+from .utils.nbm_utils import format_ncm
 
 
 def is_nbm(valor: str):  # precisamos validar o nbs
