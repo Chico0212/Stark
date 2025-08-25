@@ -52,7 +52,8 @@ def get_session() -> Session:
     return SessionLocal()
 
 
-def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "90050238000629"):
+# def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "90050238000629"):
+def buscar_dados_operacao(operacao_id: int, pfj_codigo: str):  # <<< MODIFICADO
     """
     Busca os dados de uma operação específica no banco de dados usando uma sessão SQLAlchemy.
     Retorna os dados como um dicionário.
