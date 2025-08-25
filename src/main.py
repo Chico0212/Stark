@@ -1,16 +1,35 @@
 import os
-from config import PASTA_RESULTADOS
+from pprint import pprint
+from src.utils.constants import PASTA_RESULTADOS
 from src.data_loader import load_data
 from motor_regras import find_rule
 from gerador_xml import gerar_xml_testlink
 from src.external.repository import buscar_dados_operacao
 import pandas as pd
-from src.services.langflow import generate_test_case
+from src.utils.constants import TEMPLATE_MARKDOWN
 
 
-def generate_md(rules: pd.DataFrame) -> str:
-    """função pra transformar rules em markdown"""
-    return "Olá"
+def apply_format(linha: pd.Series):
+    dados_linha = linha._asdict()
+
+    markdown_gerado = TEMPLATE_MARKDOWN.format(**dados_linha)
+
+    # Imprime o resultado para cada linha
+    print("----------------------------------------------------")
+    print(f"--- GERANDO MARKDOWN PARA A LINHA DE ÍNDICE: {linha.Index} ---")
+    print("----------------------------------------------------")
+
+    return markdown_gerado
+
+
+def dataframe_to_markdown(df: pd.DataFrame) -> str:
+    """
+    Gera uma explicação em Markdown para cada coluna do DataFrame
+    e os valores presentes.
+    """
+    result = map(apply_format, df.itertuples())
+
+    return result
 
 
 def processar_operacao(
@@ -35,7 +54,7 @@ def processar_operacao(
             print(f"  -> Base Legal: {regra_encontrada.get('lei')}")
 
             # integração com o service
-            print(generate_test_case(generate_md(regra_encontrada)))
+            pprint(dataframe_to_markdown(regra_encontrada))
 
             # Chama a nova função geradora de XML
             xml_final = gerar_xml_testlink(item, regra_encontrada, test_case_id)
