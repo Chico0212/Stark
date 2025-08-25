@@ -12,6 +12,7 @@ def get_response(data: dict) -> str:
 
 
 def generate_test_case(rules: str):
+    print("Gerando casos de teste")
     response = requests.post(
         LANGFLOW_URL,
         {"output_type": "chat", "input_type": "chat", "input_value": rules},

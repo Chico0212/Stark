@@ -1,36 +1,34 @@
 import os
-from pprint import pprint
 from src.utils.constants import PASTA_RESULTADOS
 from src.data_loader import load_data
 from src.motor_regras import find_rule
 from src.external.repository import buscar_dados_operacao
 import pandas as pd
-from src.utils.constants import TEMPLATE_MARKDOWN
 import re
 import shutil
+from src.services.langflow import generate_test_case
+
+# def apply_format(linha: pd.Series):
+#     dados_linha = linha._asdict()
+
+#     markdown_gerado = TEMPLATE_MARKDOWN.format(**dados_linha)
+
+#     # Imprime o resultado para cada linha
+#     print("----------------------------------------------------")
+#     print(f"--- GERANDO MARKDOWN PARA A LINHA DE ÍNDICE: {linha.Index} ---")
+#     print("----------------------------------------------------")
+
+#     return markdown_gerado
 
 
-def apply_format(linha: pd.Series):
-    dados_linha = linha._asdict()
+# def dataframe_to_markdown(df: pd.DataFrame) -> str:
+#     """
+#     Gera uma explicação em Markdown para cada coluna do DataFrame
+#     e os valores presentes.
+#     """
+#     result = map(apply_format, df.itertuples())
 
-    markdown_gerado = TEMPLATE_MARKDOWN.format(**dados_linha)
-
-    # Imprime o resultado para cada linha
-    print("----------------------------------------------------")
-    print(f"--- GERANDO MARKDOWN PARA A LINHA DE ÍNDICE: {linha.Index} ---")
-    print("----------------------------------------------------")
-
-    return markdown_gerado
-
-
-def dataframe_to_markdown(df: pd.DataFrame) -> str:
-    """
-    Gera uma explicação em Markdown para cada coluna do DataFrame
-    e os valores presentes.
-    """
-    result = map(apply_format, df.itertuples())
-
-    return result
+#     return result
 
 
 def limpar_pasta_resultados():
@@ -62,42 +60,42 @@ def sanitizar_nome_arquivo(nome_lei: str) -> str:
     return f"{nome_limpo}.md"
 
 
-# # [# MODIFICADO] - A função agora aceita um dicionário de contexto para enriquecer o MD.
-# def dataframe_to_markdown(df: pd.DataFrame, item_contexto: dict) -> str:
-#     """
-#     Gera uma explicação em Markdown para cada coluna do DataFrame (a regra)
-#     e também documenta o item de entrada que acionou essa regra.
-#     """
-#     titulo = "Documentação de Regra Aplicada"
-#     if not df.empty and "lei" in df.columns:
-#         titulo = f"Documentação da Regra: {df['lei'].iloc[0]}"
+# [# MODIFICADO] - A função agora aceita um dicionário de contexto para enriquecer o MD.
+def dataframe_to_markdown(df: pd.DataFrame, item_contexto: dict) -> str:
+    """
+    Gera uma explicação em Markdown para cada coluna do DataFrame (a regra)
+    e também documenta o item de entrada que acionou essa regra.
+    """
+    titulo = "Documentação de Regra Aplicada"
+    if not df.empty and "lei" in df.columns:
+        titulo = f"Documentação da Regra: {df['lei'].iloc[0]}"
 
-#     md = f"# {titulo}\n\n"
+    md = f"# {titulo}\n\n"
 
-#     # Adiciona a seção de contexto do item de entrada
-#     md += "## Contexto da Análise (Item de Entrada)\n\n"
-#     md += "Esta regra foi acionada pelos seguintes dados de entrada:\n\n"
-#     for chave, valor in item_contexto.items():
-#         md += f"- **`{chave}`**: `{valor}`\n"
-#     md += "\n---\n\n"
+    # Adiciona a seção de contexto do item de entrada
+    md += "## Contexto da Análise (Item de Entrada)\n\n"
+    md += "Esta regra foi acionada pelos seguintes dados de entrada:\n\n"
+    for chave, valor in item_contexto.items():
+        md += f"- **`{chave}`**: `{valor}`\n"
+    md += "\n---\n\n"
 
-#     # O resto da função continua igual, documentando a regra em si
-#     md += "## Detalhes da Regra Encontrada\n\n"
-#     for col in df.columns:
-#         md += f"### Coluna: `{col}`\n\n"
-#         # md += f"**Descrição:** \n> (Descreva o significado da coluna `{col}` aqui)\n\n" # Opcional
+    # O resto da função continua igual, documentando a regra em si
+    md += "## Detalhes da Regra Encontrada\n\n"
+    for col in df.columns:
+        md += f"### Coluna: `{col}`\n\n"
+        # md += f"**Descrição:** \n> (Descreva o significado da coluna `{col}` aqui)\n\n" # Opcional
 
-#         unique_values = df[col].dropna().unique()
-#         if len(unique_values) > 0:
-#             md += "**Valor presente na regra:**\n\n"
-#             for val in unique_values:
-#                 md += f"- `{val}`\n"
-#         else:
-#             md += "_Nenhum valor presente ou todos nulos_\n"
-#         md += "\n"  # Espaçamento
+        unique_values = df[col].dropna().unique()
+        if len(unique_values) > 0:
+            md += "**Valor presente na regra:**\n\n"
+            for val in unique_values:
+                md += f"- `{val}`\n"
+        else:
+            md += "_Nenhum valor presente ou todos nulos_\n"
+        md += "\n"  # Espaçamento
 
-#     md += "---\n\n"
-#     return md
+    md += "---\n\n"
+    return md
 
 
 def processar_operacao(
@@ -109,6 +107,7 @@ def processar_operacao(
     """
     try:
         resultados = []
+        llm_results: list[str] = []
         print(f"Analisando {len(dados_operacao)} item(ns) de entrada...")
         for item in dados_operacao:
             regra_encontrada = find_rule(item, df_regras)
@@ -134,13 +133,14 @@ def processar_operacao(
 
                     # Passa tanto a regra quanto o item de contexto para a função
                     markdown_string = dataframe_to_markdown(regra_df_individual, item)
-
+                    llm_results.append(markdown_string)
                     with open(caminho_arquivo_md, "w", encoding="utf-8") as f:
                         f.write(markdown_string)
 
                     print(
                         f"     Documentação da ocorrência salva em: '{caminho_arquivo_md}'"
                     )
+
         # Salva o arquivo CSV no final
         if resultados:
             df_resultados = pd.DataFrame(resultados)
@@ -149,7 +149,8 @@ def processar_operacao(
             print(
                 f"\nProcesso finalizado. Resultados consolidados salvos em: {caminho_csv}"
             )
-            pprint(dataframe_to_markdown(regra_encontrada))
+            # for r in llm_results:
+            print(generate_test_case(llm_results[0]))
             return True  # Sucesso
         else:
             print("\nProcesso finalizado. Nenhum resultado para salvar.")
