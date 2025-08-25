@@ -14,9 +14,9 @@ def get_response(data: dict) -> str:
 def generate_test_case(rules: str):
     print("Gerando casos de teste")
     response = requests.post(
-        LANGFLOW_URL,
-        {"output_type": "chat", "input_type": "chat", "input_value": rules},
-        {"stream": "false"},
+        url=LANGFLOW_URL,
+        json={"output_type": "chat", "input_type": "chat", "input_value": rules},
+        params={"stream": "false"},
         headers={
             "Content-Type": "application/json",
             "x-api-key": os.getenv("LANGFLOW_API_KEY"),

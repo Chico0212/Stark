@@ -1,90 +1,44 @@
 import os
+import shutil
+import re
+import pandas as pd
+
 from src.utils.constants import PASTA_RESULTADOS
 from src.data_loader import load_data
 from src.motor_regras import find_rule
 from src.external.repository import buscar_dados_operacao
-import pandas as pd
-import re
-import shutil
+from src.services.minio_client import salvar_resultado_no_minio
 from src.services.langflow import generate_test_case
-
-# def apply_format(linha: pd.Series):
-#     dados_linha = linha._asdict()
-
-#     markdown_gerado = TEMPLATE_MARKDOWN.format(**dados_linha)
-
-#     # Imprime o resultado para cada linha
-#     print("----------------------------------------------------")
-#     print(f"--- GERANDO MARKDOWN PARA A LINHA DE ÍNDICE: {linha.Index} ---")
-#     print("----------------------------------------------------")
-
-#     return markdown_gerado
-
-
-# def dataframe_to_markdown(df: pd.DataFrame) -> str:
-#     """
-#     Gera uma explicação em Markdown para cada coluna do DataFrame
-#     e os valores presentes.
-#     """
-#     result = map(apply_format, df.itertuples())
-
-#     return result
 
 
 def limpar_pasta_resultados():
-    """
-    Apaga e recria a pasta de resultados para garantir que começa limpa
-    a cada nova análise.
-    """
     if os.path.exists(PASTA_RESULTADOS):
         shutil.rmtree(PASTA_RESULTADOS)
         print(f"Pasta '{PASTA_RESULTADOS}' limpa com sucesso.")
     os.makedirs(PASTA_RESULTADOS, exist_ok=True)
 
 
-# [# ADICIONADO] - Função auxiliar para criar nomes de arquivo seguros
 def sanitizar_nome_arquivo(nome_lei: str) -> str:
-    """
-    Limpa uma string para que ela se torne um nome de arquivo válido.
-    - Remove caracteres inválidos.
-    - Substitui espaços e outros separadores por underscores.
-    - Adiciona a extensão .md.
-    """
     if not isinstance(nome_lei, str):
         nome_lei = str(nome_lei)
-
-    # Remove caracteres que não são permitidos em nomes de arquivo
     nome_limpo = re.sub(r'[\\/*?:"<>|]', "", nome_lei)
-    # Substitui espaços, pontos, etc., por um único underscore
     nome_limpo = re.sub(r"[\s./-]+", "_", nome_limpo)
     return f"{nome_limpo}.md"
 
 
-# [# MODIFICADO] - A função agora aceita um dicionário de contexto para enriquecer o MD.
 def dataframe_to_markdown(df: pd.DataFrame, item_contexto: dict) -> str:
-    """
-    Gera uma explicação em Markdown para cada coluna do DataFrame (a regra)
-    e também documenta o item de entrada que acionou essa regra.
-    """
     titulo = "Documentação de Regra Aplicada"
     if not df.empty and "lei" in df.columns:
         titulo = f"Documentação da Regra: {df['lei'].iloc[0]}"
-
     md = f"# {titulo}\n\n"
-
-    # Adiciona a seção de contexto do item de entrada
     md += "## Contexto da Análise (Item de Entrada)\n\n"
     md += "Esta regra foi acionada pelos seguintes dados de entrada:\n\n"
     for chave, valor in item_contexto.items():
         md += f"- **`{chave}`**: `{valor}`\n"
     md += "\n---\n\n"
-
-    # O resto da função continua igual, documentando a regra em si
     md += "## Detalhes da Regra Encontrada\n\n"
     for col in df.columns:
         md += f"### Coluna: `{col}`\n\n"
-        # md += f"**Descrição:** \n> (Descreva o significado da coluna `{col}` aqui)\n\n" # Opcional
-
         unique_values = df[col].dropna().unique()
         if len(unique_values) > 0:
             md += "**Valor presente na regra:**\n\n"
@@ -92,8 +46,7 @@ def dataframe_to_markdown(df: pd.DataFrame, item_contexto: dict) -> str:
                 md += f"- `{val}`\n"
         else:
             md += "_Nenhum valor presente ou todos nulos_\n"
-        md += "\n"  # Espaçamento
-
+        md += "\n"
     md += "---\n\n"
     return md
 
@@ -102,12 +55,10 @@ def processar_operacao(
     dados_operacao: list, df_regras: pd.DataFrame, test_case_id: int
 ):
     """
-    Orquestra o processo, encontrando todas as regras correspondentes e
-    processando cada uma individualmente, sem sobreposição de arquivos.
+    Orquestra o fluxo: Gera .md local, envia para o Langflow, e salva a resposta no MinIO.
     """
     try:
         resultados = []
-        llm_results: list[str] = []
         print(f"Analisando {len(dados_operacao)} item(ns) de entrada...")
         for item in dados_operacao:
             regra_encontrada = find_rule(item, df_regras)
@@ -116,32 +67,48 @@ def processar_operacao(
                     f"\nResultado para o item {item}: Nenhuma regra correspondente na planilha."
                 )
             else:
-                for regra in regra_encontrada.to_dict(orient="records"):
+                for i, regra in enumerate(regra_encontrada.to_dict(orient="records")):
                     resultado = {**item, **regra}
                     resultados.append(resultado)
-
                     regra_df_individual = pd.DataFrame([regra])
-                    # [# MODIFICADO] - Criação de um nome de arquivo único e descritivo
-                    # Combina o NBM/NCM do item com a base legal da regra.
+
                     nbm_item = item.get("nbm_codigo", "sem_nbm")
                     lei_regra = regra.get("lei", "sem_lei")
                     identificador_unico = f"NBM_{nbm_item}__{lei_regra}"
-
                     nome_arquivo_md = sanitizar_nome_arquivo(identificador_unico)
-                    os.makedirs(PASTA_RESULTADOS, exist_ok=True)
                     caminho_arquivo_md = os.path.join(PASTA_RESULTADOS, nome_arquivo_md)
-
-                    # Passa tanto a regra quanto o item de contexto para a função
                     markdown_string = dataframe_to_markdown(regra_df_individual, item)
-                    llm_results.append(markdown_string)
+
                     with open(caminho_arquivo_md, "w", encoding="utf-8") as f:
                         f.write(markdown_string)
 
                     print(
-                        f"     Documentação da ocorrência salva em: '{caminho_arquivo_md}'"
+                        f"     Documentação da ocorrência salva localmente em: '{caminho_arquivo_md}'"
                     )
 
-        # Salva o arquivo CSV no final
+                    print("      Enviando conteúdo para o Langflow para gerar teste...")
+                    resposta_ia = generate_test_case(f"""
+                                                     externalid: {i + 1}
+                                                     cenário: {markdown_string}""")
+
+                    if resposta_ia:
+                        print(
+                            "      Resposta recebida do Langflow. Iniciando upload para o MinIO..."
+                        )
+
+                        nome_base = os.path.splitext(nome_arquivo_md)[0]
+                        nome_arquivo_teste_minio = f"{nome_base}-testcases.xml"
+
+                        if not salvar_resultado_no_minio(
+                            nome_arquivo=nome_arquivo_teste_minio, conteudo=resposta_ia
+                        ):
+                            print("      Não foi possível salvar o arquivo no minio")
+
+                    else:
+                        print(
+                            "      Não foi possível obter uma resposta do Langflow para este item."
+                        )
+
         if resultados:
             df_resultados = pd.DataFrame(resultados)
             caminho_csv = os.path.join(PASTA_RESULTADOS, "resultados.csv")
@@ -149,21 +116,32 @@ def processar_operacao(
             print(
                 f"\nProcesso finalizado. Resultados consolidados salvos em: {caminho_csv}"
             )
-            # for r in llm_results:
-            print(generate_test_case(llm_results[0]))
-            return True  # Sucesso
+            return True
         else:
             print("\nProcesso finalizado. Nenhum resultado para salvar.")
             return False
     except Exception as e:
+        import traceback
+
         print(f"Ocorreu um erro inesperado: {e}")
-        return False  # Falha
+        traceback.print_exc()
+        return False
 
 
 if __name__ == "__main__":
+    print("Iniciando o processo de análise de regras...")
+
+    limpar_pasta_resultados()
     regras_df = load_data()
 
     if regras_df is not None:
-        dados_para_analisar = buscar_dados_operacao(operacao_id=1)
-        # Passamos um ID único para esta execução de teste específica
-        processar_operacao(dados_para_analisar, regras_df, test_case_id=25630)
+        dados_para_analisar = buscar_dados_operacao(
+            operacao_id=1, pfj_codigo="90050238000629"
+        )
+
+        if dados_para_analisar:
+            processar_operacao(dados_para_analisar, regras_df, test_case_id=25630)
+        else:
+            print("Nenhum dado foi retornado do banco de dados para a análise.")
+
+    print("\nExecução finalizada.")

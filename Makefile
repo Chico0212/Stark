@@ -1,5 +1,5 @@
 # Variáveis
-PYTHON ?= uv run
+PYTHON  ?= uv run
 MAIN    := src/main.py
 DASH    := app/dashboard.py
 INIT    := scripts/init.sh
@@ -8,7 +8,7 @@ INIT    := scripts/init.sh
 .PHONY: help stark dashboard init check-uv
 
 python_path:
-	export PYTHONPATH="$PYTHONPATH:$(pwd)"
+	export PYTHONPATH="$(pwd)"
 
 help: ## Mostra esta ajuda
 	@echo "Comandos disponíveis:"

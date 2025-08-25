@@ -5,9 +5,9 @@ import numpy as np
 import sys
 import os
 
-# DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
-# DIRETORIO_RAIZ = os.path.dirname(DIRETORIO_ATUAL)
-# sys.path.append(DIRETORIO_RAIZ)
+DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
+DIRETORIO_RAIZ = os.path.dirname(DIRETORIO_ATUAL)
+sys.path.append(DIRETORIO_RAIZ)
 
 from src.utils.constants import PASTA_RESULTADOS
 from src.data_loader import load_data

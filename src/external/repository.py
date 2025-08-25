@@ -3,6 +3,7 @@ from dotenv import load_dotenv, find_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
+import json
 
 load_dotenv(find_dotenv())
 
@@ -52,12 +53,18 @@ def get_session() -> Session:
     return SessionLocal()
 
 
+def load_mock_data():
+    with open("data/data_mock.json", "r") as file:
+        return json.load(file)
+
+
 # def buscar_dados_operacao(operacao_id: int = 1, pfj_codigo: str = "90050238000629"):
 def buscar_dados_operacao(operacao_id: int, pfj_codigo: str):  # <<< MODIFICADO
     """
     Busca os dados de uma operação específica no banco de dados usando uma sessão SQLAlchemy.
     Retorna os dados como um dicionário.
     """
+    return load_mock_data()
     with get_session() as session:
         try:
             print(f"Buscando dados para a operação com ID: {operacao_id}")
@@ -110,7 +117,10 @@ if __name__ == "__main__":
     session = get_session()
     try:
         if session:
-            dados = buscar_dados_operacao(operacao_id=1)
+            with open("data/data_mock.json", "r") as file:
+                dados = json.load(
+                    file
+                )  # buscar_dados_operacao(operacao_id=1, pfj_codigo='90050238000629')
             if dados:
                 print("Dados retornados:", dados)
     except Exception as e:
