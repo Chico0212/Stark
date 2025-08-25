@@ -49,3 +49,4 @@ htmlcov/
 
 .env
 temp/
+results
