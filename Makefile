@@ -7,14 +7,14 @@ INIT    := scripts/init.sh
 # Alvos que não geram arquivos
 .PHONY: help stark dashboard init check-uv
 
-python_path:
-	export PYTHONPATH="${PWD}"
+# python_path:
+# 	export PYTHONPATH="${PWD}"
 
 help: ## Mostra esta ajuda
 	@echo "Comandos disponíveis:"
 	@awk -F':.*##' '/^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-check-uv: python_path ## Verifica se uv está instalado
+check-uv: ## Verifica se uv está instalado
 	@command -v uv >/dev/null 2>&1 || { \
 		echo "Erro: uv não encontrado no PATH. Instale com:"; \
 		echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"; \

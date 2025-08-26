@@ -38,13 +38,20 @@ Isso irá:
 * **Aplicação principal:**
 
 ```bash
+make dashboard
+```
+
+* **Apenas o backend:**
+
+```bash
 make stark
 ```
 
-* **Dashboard Streamlit:**
+### Possíveis problemas
 
+Caso ocorram problemas de import, execute:
 ```bash
-make dashboard
+export PYTHONPATH="$PYTHONPATH:$(pwd)"
 ```
 
 ---
