@@ -5,15 +5,17 @@ import numpy as np
 import sys
 import os
 
+from src.services.minio_client import get_file
+
 DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
 DIRETORIO_RAIZ = os.path.dirname(DIRETORIO_ATUAL)
 sys.path.append(DIRETORIO_RAIZ)
 
-from src.utils.constants import PASTA_RESULTADOS
+#from src.utils.constants import PASTA_RESULTADOS
 from src.data_loader import load_data
 from src.external.repository import buscar_dados_operacao
 from src.main import processar_operacao, limpar_pasta_resultados
-from src.motor_regras import find_rule
+#from src.motor_regras import find_rule
 
 PASTA_RESULTADOS = "results"
 
@@ -31,7 +33,7 @@ if 'dados_dashboard' not in st.session_state:
 # --- Barra Lateral para Geração de Relatório ---
 st.sidebar.image("app/LOGOSYNCHRO.png", use_container_width=True)
 
-pfj_codigo_input = st.sidebar.text_input("Digite o Código PFJ:", "1003A5F4F")
+pfj_codigo_input = st.sidebar.text_input("Digite o Código PFJ:", "90050238000629")
 
 if st.sidebar.button("Gerar Análise", type="primary"):
         pfj_codigo = pfj_codigo_input
@@ -41,15 +43,14 @@ if st.sidebar.button("Gerar Análise", type="primary"):
             regras_df = load_data()
             dados_para_analisar = buscar_dados_operacao(operacao_id=1, pfj_codigo=pfj_codigo)
             sucesso = processar_operacao(dados_para_analisar, regras_df, test_case_id=25630)
-
+        
         if sucesso:
+            resultados, zip_file_download_key = sucesso
+
+            # Define o nome do arquivo ZIP que o backend enviou para o MinIO.
+            st.session_state.minio_object_name = zip_file_download_key
             st.sidebar.success("Relatório gerado com sucesso!")
-            caminho_csv_final = os.path.join(PASTA_RESULTADOS, "resultados.csv")
-            if os.path.exists(caminho_csv_final):
-                st.session_state.dados_dashboard = pd.read_csv(caminho_csv_final)
-            else:
-                st.sidebar.error("Arquivo de resultados não foi encontrado.")
-                st.session_state.dados_dashboard = None
+            st.session_state.dados_dashboard = resultados
         else:
             st.sidebar.error("Falha ao processar. Verifique se os códigos estão corretos.")
             st.session_state.dados_dashboard = None
@@ -70,7 +71,6 @@ if st.session_state.dados_dashboard is not None:
         'total_ocorrencias': 'Quantidade'
     }, inplace=True)
 
-    # [CORREÇÃO PRINCIPAL] Agrega os dados para obter os totais por cenário
     # Isso resolve a inconsistência entre as métricas e o gráfico.
     df_agregado = df_cenarios_bruto.groupby('Cenário')['Quantidade'].sum().reset_index()
 
@@ -120,6 +120,29 @@ if st.session_state.dados_dashboard is not None:
         # Mostra os dados brutos para que os detalhes não sejam perdidos
         colunas_para_mostrar = ['Cenário', 'Quantidade', 'nbm_codigo']
         st.dataframe(df_cenarios_bruto[colunas_para_mostrar])
+
+    # [# ADICIONADO AQUI] Seção de Download dos Testes no final do dashboard
+    st.markdown("---")
+    st.subheader("Download dos Casos de Teste Gerados")
+
+    if st.session_state.get("minio_object_name"):
+        # data_available = False
+        with st.spinner(f"Carregando arquivo '{st.session_state.minio_object_name}' do repositório..."):
+            data = get_file(st.session_state.minio_object_name)
+
+        if data:
+            st.download_button(
+                label="📥 Baixar Pacote de Testes (.zip)",
+                data=data,
+                file_name=st.session_state.minio_object_name,
+                mime="application/zip",
+                use_container_width=False,  # Botão com largura normal
+                type="primary"  # Botão com destaque
+            )
+        else:
+            # Mensagem de erro se o arquivo não for encontrado no MinIO
+            st.error(
+                f"Não foi possível carregar o arquivo '{st.session_state.minio_object_name}' do repositório. Verifique se o processamento foi concluído com sucesso e o arquivo foi enviado.")
 
 else:
     # Mensagem inicial antes de gerar o relatório

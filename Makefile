@@ -8,7 +8,7 @@ INIT    := scripts/init.sh
 .PHONY: help stark dashboard init check-uv
 
 python_path:
-	export PYTHONPATH="$(pwd)"
+	export PYTHONPATH="${PWD}"
 
 help: ## Mostra esta ajuda
 	@echo "Comandos disponíveis:"

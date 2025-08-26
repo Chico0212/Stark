@@ -1,14 +1,22 @@
 import os
 import shutil
 import re
+import sys
+import time
+from typing import Optional
 import pandas as pd
-
 from src.utils.constants import PASTA_RESULTADOS
 from src.data_loader import load_data
 from src.motor_regras import find_rule
 from src.external.repository import buscar_dados_operacao
 from src.services.minio_client import salvar_resultado_no_minio
 from src.services.langflow import generate_test_case
+import zipfile
+
+
+DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
+DIRETORIO_RAIZ = os.path.dirname(DIRETORIO_ATUAL)
+sys.path.append(DIRETORIO_RAIZ)
 
 
 def limpar_pasta_resultados():
@@ -53,12 +61,19 @@ def dataframe_to_markdown(df: pd.DataFrame, item_contexto: dict) -> str:
 
 def processar_operacao(
     dados_operacao: list, df_regras: pd.DataFrame, test_case_id: int
-):
+) -> Optional[tuple[pd.DataFrame, str]]:
     """
     Orquestra o fluxo: Gera .md local, envia para o Langflow, e salva a resposta no MinIO.
     """
     try:
+        count = 0
+        limit = 3
         resultados = []
+
+        zip_file = (
+            f"Stark_file_result_{time.strftime('ddmmyyyTHH:mm')}.zip"  # '%d%m%Y_%H%M'
+        )
+
         print(f"Analisando {len(dados_operacao)} item(ns) de entrada...")
         for item in dados_operacao:
             regra_encontrada = find_rule(item, df_regras)
@@ -68,6 +83,10 @@ def processar_operacao(
                 )
             else:
                 for i, regra in enumerate(regra_encontrada.to_dict(orient="records")):
+                    if count == limit:
+                        break
+
+                    count += 1  ## gera apenas 3 pra economizar tempo
                     resultado = {**item, **regra}
                     resultados.append(resultado)
                     regra_df_individual = pd.DataFrame([regra])
@@ -79,16 +98,13 @@ def processar_operacao(
                     caminho_arquivo_md = os.path.join(PASTA_RESULTADOS, nome_arquivo_md)
                     markdown_string = dataframe_to_markdown(regra_df_individual, item)
 
-                    with open(caminho_arquivo_md, "w", encoding="utf-8") as f:
-                        f.write(markdown_string)
-
                     print(
                         f"     Documentação da ocorrência salva localmente em: '{caminho_arquivo_md}'"
                     )
 
                     print("      Enviando conteúdo para o Langflow para gerar teste...")
                     resposta_ia = generate_test_case(f"""
-                                                     externalid: {i + 1}
+                                                     externalid: Stark_{time.strftime("dd_mm_yyyTHH:mm")}
                                                      cenário: {markdown_string}""")
 
                     if resposta_ia:
@@ -97,29 +113,43 @@ def processar_operacao(
                         )
 
                         nome_base = os.path.splitext(nome_arquivo_md)[0]
-                        nome_arquivo_teste_minio = f"{nome_base}-testcases.xml"
+                        nome_arquivo_teste_minio = f"{nome_base}.testcases.xml"
 
-                        if not salvar_resultado_no_minio(
-                            nome_arquivo=nome_arquivo_teste_minio, conteudo=resposta_ia
-                        ):
-                            print("      Não foi possível salvar o arquivo no minio")
+                        path = os.path.join(
+                            f"{PASTA_RESULTADOS}", nome_arquivo_teste_minio
+                        )
+
+                        with open(path, "w") as file:
+                            file.write(resposta_ia)
+
+                        with zipfile.ZipFile(
+                            os.path.join(PASTA_RESULTADOS, zip_file),
+                            "a",
+                            compression=zipfile.ZIP_DEFLATED,
+                        ) as zipf:
+                            zipf.write(path)
 
                     else:
                         print(
                             "      Não foi possível obter uma resposta do Langflow para este item."
                         )
+                break
+
+        with open(zip_file, "rb") as file:
+            zip_file_download_key = salvar_resultado_no_minio(
+                nome_arquivo=zip_file, conteudo=file.read()
+            )
+
+        if not zip_file_download_key:
+            print("      Não foi possível salvar o arquivo no minio")
 
         if resultados:
-            df_resultados = pd.DataFrame(resultados)
-            caminho_csv = os.path.join(PASTA_RESULTADOS, "resultados.csv")
-            df_resultados.to_csv(caminho_csv, index=False, encoding="utf-8-sig")
-            print(
-                f"\nProcesso finalizado. Resultados consolidados salvos em: {caminho_csv}"
-            )
-            return True
+            print(f"\n\n{pd.DataFrame(resultados)}\n\n")
+            return pd.DataFrame(resultados), zip_file_download_key
         else:
             print("\nProcesso finalizado. Nenhum resultado para salvar.")
-            return False
+            return None  # data frame vazio
+
     except Exception as e:
         import traceback
 

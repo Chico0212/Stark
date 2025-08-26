@@ -28,7 +28,7 @@ except Exception as e:
     minio_client = None
 
 
-def salvar_resultado_no_minio(nome_arquivo: str, conteudo: str) -> Optional[str]:
+def salvar_resultado_no_minio(nome_arquivo: str, conteudo: bytes) -> Optional[str]:
     """
     Salva uma string de conteúdo como um arquivo de texto no bucket do MinIO.
     """
@@ -37,24 +37,29 @@ def salvar_resultado_no_minio(nome_arquivo: str, conteudo: str) -> Optional[str]
         return False
 
     try:
-        conteudo_bytes = conteudo.encode("utf-8")
-        conteudo_stream = BytesIO(conteudo_bytes)
-        tamanho_conteudo = len(conteudo_bytes)
+        # conteudo_bytes = conteudo.encode("utf-8")
+        conteudo_stream = BytesIO(conteudo)
+        tamanho_conteudo = len(conteudo)
 
         minio_client.put_object(
             bucket_name=MINIO_BUCKET,
             object_name=nome_arquivo,
             data=conteudo_stream,
             length=tamanho_conteudo,
-            content_type="text/plain",
+            content_type="application/zip",
         )
 
         print(
             f"      Resultado salvo com sucesso no MinIO: '{MINIO_BUCKET}/{nome_arquivo}'"
         )
 
-        return minio_client.get_presigned_url("GET", MINIO_BUCKET, nome_arquivo)
+        return nome_arquivo
 
     except S3Error as exc:
         print(f"ERRO ao salvar no MinIO: {exc}")
         return None
+
+
+def get_file(key: str) -> bytes:
+    response = minio_client.get_object(MINIO_BUCKET, key)
+    return response.read()
