@@ -90,6 +90,25 @@ if st.session_state.dados_dashboard is not None:
     col2.metric(f"Principal Cenário: {cenario_com_maior_volume['Cenário']}",
                 f"{cenario_com_maior_volume['Quantidade']}")
 
+    if st.session_state.get("minio_object_name"):
+        # data_available = False
+        with st.spinner(f"Carregando arquivo '{st.session_state.minio_object_name}' do repositório..."):
+            data = get_file(st.session_state.minio_object_name)
+
+        if data:
+            st.download_button(
+                label="📥 Baixar Pacote de Testes (.zip)",
+                data=data,
+                file_name=st.session_state.minio_object_name,
+                mime="application/zip",
+                use_container_width=False,  # Botão com largura normal
+                type="primary"  # Botão com destaque
+            )
+        else:
+            # Mensagem de erro se o arquivo não for encontrado no MinIO
+            st.error(
+                f"Não foi possível carregar o arquivo '{st.session_state.minio_object_name}' do repositório. Verifique se o processamento foi concluído com sucesso e o arquivo foi enviado.")
+
     st.markdown("---")
 
     # --- Visualização com Abas ---
@@ -124,25 +143,6 @@ if st.session_state.dados_dashboard is not None:
     # [# ADICIONADO AQUI] Seção de Download dos Testes no final do dashboard
     st.markdown("---")
     st.subheader("Download dos Casos de Teste Gerados")
-
-    if st.session_state.get("minio_object_name"):
-        # data_available = False
-        with st.spinner(f"Carregando arquivo '{st.session_state.minio_object_name}' do repositório..."):
-            data = get_file(st.session_state.minio_object_name)
-
-        if data:
-            st.download_button(
-                label="📥 Baixar Pacote de Testes (.zip)",
-                data=data,
-                file_name=st.session_state.minio_object_name,
-                mime="application/zip",
-                use_container_width=False,  # Botão com largura normal
-                type="primary"  # Botão com destaque
-            )
-        else:
-            # Mensagem de erro se o arquivo não for encontrado no MinIO
-            st.error(
-                f"Não foi possível carregar o arquivo '{st.session_state.minio_object_name}' do repositório. Verifique se o processamento foi concluído com sucesso e o arquivo foi enviado.")
 
 else:
     # Mensagem inicial antes de gerar o relatório
