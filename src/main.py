@@ -70,8 +70,9 @@ def processar_operacao(
         limit = 3
         resultados = []
 
-        zip_file = (
-            f"Stark_file_result_{time.strftime('ddmmyyyTHH:mm')}.zip"  # '%d%m%Y_%H%M'
+        zip_file = os.path.join(
+            PASTA_RESULTADOS,
+            f"Stark_file_result_{time.strftime('%d%m%Y_%H%M')}.zip",  # '%d%m%Y_%H%M'
         )
 
         print(f"Analisando {len(dados_operacao)} item(ns) de entrada...")
@@ -123,7 +124,7 @@ def processar_operacao(
                             file.write(resposta_ia)
 
                         with zipfile.ZipFile(
-                            os.path.join(PASTA_RESULTADOS, zip_file),
+                            zip_file,
                             "a",
                             compression=zipfile.ZIP_DEFLATED,
                         ) as zipf:
