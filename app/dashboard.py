@@ -94,6 +94,10 @@ if st.session_state.dados_dashboard is not None:
         # data_available = False
         with st.spinner(f"Carregando arquivo '{st.session_state.minio_object_name}' do repositório..."):
             data = get_file(st.session_state.minio_object_name)
+        
+        # [# ADICIONADO AQUI] Seção de Download dos Testes no final do dashboard
+        st.markdown("---")
+        st.subheader("Download dos Casos de Teste Gerados")
 
         if data:
             st.download_button(
@@ -140,9 +144,6 @@ if st.session_state.dados_dashboard is not None:
         colunas_para_mostrar = ['Cenário', 'Quantidade', 'nbm_codigo']
         st.dataframe(df_cenarios_bruto[colunas_para_mostrar])
 
-    # [# ADICIONADO AQUI] Seção de Download dos Testes no final do dashboard
-    st.markdown("---")
-    st.subheader("Download dos Casos de Teste Gerados")
 
 else:
     # Mensagem inicial antes de gerar o relatório

@@ -1,4 +1,5 @@
 import os
+import random
 import shutil
 import re
 import sys
@@ -66,8 +67,6 @@ def processar_operacao(
     Orquestra o fluxo: Gera .md local, envia para o Langflow, e salva a resposta no MinIO.
     """
     try:
-        count = 0
-        limit = 3
         resultados = []
 
         zip_file = os.path.join(
@@ -84,10 +83,6 @@ def processar_operacao(
                 )
             else:
                 for i, regra in enumerate(regra_encontrada.to_dict(orient="records")):
-                    if count == limit:
-                        break
-
-                    count += 1  ## gera apenas 3 pra economizar tempo
                     resultado = {**item, **regra}
                     resultados.append(resultado)
                     regra_df_individual = pd.DataFrame([regra])
@@ -105,7 +100,7 @@ def processar_operacao(
 
                     print("      Enviando conteúdo para o Langflow para gerar teste...")
                     resposta_ia = generate_test_case(f"""
-                                                     externalid: Stark_{time.strftime("dd_mm_yyyTHH:mm")}
+                                                     externalid: {random.randint(1, 9999)}
                                                      cenário: {markdown_string}""")
 
                     if resposta_ia:
@@ -134,7 +129,7 @@ def processar_operacao(
                         print(
                             "      Não foi possível obter uma resposta do Langflow para este item."
                         )
-                break
+                # break
 
         with open(zip_file, "rb") as file:
             zip_file_download_key = salvar_resultado_no_minio(
